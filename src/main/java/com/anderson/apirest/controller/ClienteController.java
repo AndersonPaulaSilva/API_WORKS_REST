@@ -1,39 +1,67 @@
 package com.anderson.apirest.controller;
 
 import com.anderson.apirest.model.Cliente;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.anderson.apirest.repository.ClienteRepository;
+import com.anderson.apirest.service.CadastroClienteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class ClienteController {
 
-    @GetMapping("/clientes")
-    public List<Cliente> listar() {
+    @Autowired
+    private ClienteRepository clienteRepository;
 
-        var cliente1 = new Cliente();
+    @Autowired
+    private CadastroClienteService cadastroCliente;
 
-        cliente1.setId(1L);
-        cliente1.setNome("Anderson");
-        cliente1.setTelefone("34 99999-1111");
-        cliente1.setEmail("andersonnetmail@gmail.com");
+    public List<Cliente> listar(){
+        return clienteRepository.findAll();
+    }
 
-        var cliente2 = new Cliente();
+    @GetMapping("/{clienteId}")
+    public ResponseEntity<Cliente> buscar(@PathVariable Long clienteId){
+        Optional<Cliente> cliente = clienteRepository.findById(clienteId);
 
-        cliente2.setId(1L);
-        cliente2.setNome("Silva");
-        cliente2.setTelefone("21 99999-2222");
-        cliente2.setEmail("andersonpauladasilva@gmail.com");
+        if (cliente.isPresent()){
+            return ResponseEntity.ok(cliente.get());
+        }
+        return ResponseEntity.notFound().build();
+    }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Cliente adicionar(@Valid @RequestBody Cliente cliente) {
+        return cadastroCliente.salvar(cliente);
+    }
 
-        var cliente3 = new Cliente();
+    @PutMapping("/{clienteId}")
+    public ResponseEntity<Cliente> atualizar(@Valid @PathVariable Long clienteId,
+                                             @RequestBody Cliente cliente) {
 
-        cliente3.setId(1L);
-        cliente3.setNome("Paula");
-        cliente3.setTelefone("21 88888-3333");
-        cliente3.setEmail("andersonpauladasilva@gmail.com");
+        if (!clienteRepository.existsById(clienteId)) {
+            return ResponseEntity.notFound().build();
+        }
 
-        return Arrays.asList(cliente1, cliente2, cliente3);
+        cliente.setId(clienteId);
+        cliente = cadastroCliente.salvar(cliente);
+
+        return ResponseEntity.ok(cliente);
+    }
+
+    @DeleteMapping("/{clienteId}")
+    public ResponseEntity<Void> remover(@PathVariable Long clienteId) {
+        if (!clienteRepository.existsById(clienteId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        cadastroCliente.excluir(clienteId);
+
+        return ResponseEntity.noContent().build();
     }
 }
